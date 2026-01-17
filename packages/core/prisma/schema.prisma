@@ -5,10 +5,9 @@ generator client {
   provider = "prisma-client-js"
 }
 
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
+ datasource db {
+   provider = "postgresql"
+ }
 
 // =============================================================================
 // Enums
@@ -155,6 +154,7 @@ model Tenant {
   conversations Conversation[]
   messages      Message[]
   auditEvents   AuditEvent[]
+  settings      TenantSettings?
 
   @@index([status])
   @@index([slug])
@@ -171,6 +171,7 @@ model User {
   tenantId    String     @map("tenant_id")
   email       String
   name        String
+  password    String?
   avatarUrl   String?    @map("avatar_url")
   status      UserStatus @default(pending)
   role        UserRole   @default(operator)
@@ -423,4 +424,27 @@ model AuditEvent {
   @@index([tenantId, eventType])
   @@index([tenantId, entityType, entityId])
   @@map("audit_events")
+}
+
+// =============================================================================
+// TenantSettings Model - Tenant-specific settings and preferences
+// =============================================================================
+
+model TenantSettings {
+  id                    String   @id @default(cuid())
+  tenantId              String   @unique @map("tenant_id")
+  brandName             String?  @map("brand_name")
+  brandLogo             String?  @map("brand_logo")
+  primaryColor          String?  @map("primary_color")
+  notificationEmail     String?  @map("notification_email")
+  taskAutoAssignment    Boolean  @default(false) @map("task_auto_assignment")
+  defaultSLADuration    String   @default("24h") @map("default_sla_duration")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("tenant_settings")
 }

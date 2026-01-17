@@ -34,12 +34,11 @@
 
 export const VERSION = '0.0.1';
 
+// Standalone server entry point
+export { main as runStandaloneMCPServer } from './standalone.js';
+
 // Server exports
-export {
-  createMCPServer,
-  runMCPServer,
-  startMCPServer,
-} from './server.js';
+export { createMCPServer, runMCPServer, startMCPServer } from './server.js';
 
 // Type exports
 export type {

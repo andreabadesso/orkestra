@@ -7,11 +7,7 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { router, authedProcedure, managerProcedure } from '../index.js';
-import {
-  NotFoundError,
-  type WorkflowStatus,
-  type JsonValue,
-} from '@orkestra/core';
+import { NotFoundError, type WorkflowStatus, type JsonValue } from '@orkestra/core';
 
 /**
  * Workflow status enum for validation
@@ -36,12 +32,14 @@ const workflowExecutionOptionsSchema = z.object({
   runTimeoutSeconds: z.number().positive().optional(),
   searchAttributes: z.record(z.string(), z.unknown()).optional(),
   memo: z.record(z.string(), z.unknown()).optional(),
-  retry: z.object({
-    maxAttempts: z.number().int().positive(),
-    initialIntervalSeconds: z.number().positive(),
-    maxIntervalSeconds: z.number().positive(),
-    backoffCoefficient: z.number().positive(),
-  }).optional(),
+  retry: z
+    .object({
+      maxAttempts: z.number().int().positive(),
+      initialIntervalSeconds: z.number().positive(),
+      maxIntervalSeconds: z.number().positive(),
+      backoffCoefficient: z.number().positive(),
+    })
+    .optional(),
 });
 
 /**
@@ -49,10 +47,7 @@ const workflowExecutionOptionsSchema = z.object({
  */
 const workflowFilterSchema = z.object({
   type: z.string().optional(),
-  status: z.union([
-    workflowStatusSchema,
-    z.array(workflowStatusSchema),
-  ]).optional(),
+  status: z.union([workflowStatusSchema, z.array(workflowStatusSchema)]).optional(),
   startedAfter: z.string().datetime().optional(),
   startedBefore: z.string().datetime().optional(),
   startedBy: z.string().optional(),
@@ -74,12 +69,14 @@ export const workflowRouter = router({
    * Start a new workflow
    */
   start: authedProcedure
-    .input(z.object({
-      type: z.string().min(1, 'Workflow type is required'),
-      input: z.unknown(),
-      options: workflowExecutionOptionsSchema.optional(),
-      metadata: z.record(z.string(), z.unknown()).optional(),
-    }))
+    .input(
+      z.object({
+        type: z.string().min(1, 'Workflow type is required'),
+        input: z.unknown(),
+        options: workflowExecutionOptionsSchema.optional(),
+        metadata: z.record(z.string(), z.unknown()).optional(),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       // Note: Actual workflow starting would be done through Temporal client
       // This is a placeholder that would integrate with the workflow service
@@ -116,9 +113,11 @@ export const workflowRouter = router({
    * Get a workflow by ID
    */
   get: authedProcedure
-    .input(z.object({
-      id: z.string().min(1, 'Workflow ID is required'),
-    }))
+    .input(
+      z.object({
+        id: z.string().min(1, 'Workflow ID is required'),
+      })
+    )
     .query(async ({ input }) => {
       // Placeholder - would query database and/or Temporal
       // This would integrate with the workflow repository
@@ -134,10 +133,12 @@ export const workflowRouter = router({
    * List workflows with filtering and pagination
    */
   list: authedProcedure
-    .input(z.object({
-      filter: workflowFilterSchema.optional(),
-      pagination: paginationSchema.optional(),
-    }))
+    .input(
+      z.object({
+        filter: workflowFilterSchema.optional(),
+        pagination: paginationSchema.optional(),
+      })
+    )
     .query(async ({ input: _input }) => {
       // Placeholder - would query database with filters
       // In real implementation, pagination would be used:
@@ -162,11 +163,13 @@ export const workflowRouter = router({
    * Send a signal to a workflow
    */
   signal: authedProcedure
-    .input(z.object({
-      id: z.string().min(1, 'Workflow ID is required'),
-      signalName: z.string().min(1, 'Signal name is required'),
-      args: z.array(z.unknown()).optional(),
-    }))
+    .input(
+      z.object({
+        id: z.string().min(1, 'Workflow ID is required'),
+        signalName: z.string().min(1, 'Signal name is required'),
+        args: z.array(z.unknown()).optional(),
+      })
+    )
     .mutation(async ({ input }) => {
       // Placeholder - would signal workflow via Temporal
       // This would:
@@ -186,10 +189,12 @@ export const workflowRouter = router({
    * Cancel a workflow
    */
   cancel: managerProcedure
-    .input(z.object({
-      id: z.string().min(1, 'Workflow ID is required'),
-      reason: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        id: z.string().min(1, 'Workflow ID is required'),
+        reason: z.string().optional(),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       // Placeholder - would cancel workflow via Temporal
       // This would:
@@ -209,12 +214,14 @@ export const workflowRouter = router({
   /**
    * Query workflow state
    */
-  query: authedProcedure
-    .input(z.object({
-      id: z.string().min(1, 'Workflow ID is required'),
-      queryName: z.string().min(1, 'Query name is required'),
-      args: z.array(z.unknown()).optional(),
-    }))
+  queryWorkflow: authedProcedure
+    .input(
+      z.object({
+        id: z.string().min(1, 'Workflow ID is required'),
+        queryName: z.string().min(1, 'Query name is required'),
+        args: z.array(z.unknown()).optional(),
+      })
+    )
     .query(async ({ input }) => {
       // Placeholder - would query workflow via Temporal
       // This would:
@@ -234,10 +241,12 @@ export const workflowRouter = router({
    * Get workflow history/events
    */
   history: authedProcedure
-    .input(z.object({
-      id: z.string().min(1, 'Workflow ID is required'),
-      pagination: paginationSchema.optional(),
-    }))
+    .input(
+      z.object({
+        id: z.string().min(1, 'Workflow ID is required'),
+        pagination: paginationSchema.optional(),
+      })
+    )
     .query(async ({ input }) => {
       // Placeholder - would get workflow history from Temporal
       // In real implementation, pagination would be used:

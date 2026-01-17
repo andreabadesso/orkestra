@@ -1,0 +1,146 @@
+'use client';
+
+import { useState } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select } from '@/components/ui/select';
+import { trpc } from '@/lib/trpc';
+import { useToast } from '@/hooks/use-toast';
+import { Checkbox } from '@/components/ui/checkbox';
+
+export function CreateUserModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const toast = useToast();
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    role: 'agent' as 'admin' | 'manager' | 'agent',
+    password: '',
+  });
+  const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
+
+  const { data: groupsData } = trpc.admin.listGroups.useQuery(
+    {
+      filter: { isAssignable: true },
+      pagination: { take: 100, skip: 0 },
+    },
+    { enabled: isOpen }
+  );
+
+  const createUser = trpc.userManagement.create.useMutation({
+    onSuccess: () => {
+      toast.success('User created successfully');
+      onClose();
+    },
+    onError: (error: { message: string }) => {
+      toast.error(error.message);
+    },
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await createUser.mutateAsync({
+      ...formData,
+      groupIds: selectedGroupIds.length > 0 ? selectedGroupIds : undefined,
+    });
+  };
+
+  const toggleGroup = (groupId: string) => {
+    setSelectedGroupIds((prev) =>
+      prev.includes(groupId) ? prev.filter((id) => id !== groupId) : [...prev, groupId]
+    );
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Create New User</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Name</Label>
+            <Input
+              id="name"
+              value={formData.name}
+              onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              value={formData.password}
+              onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
+              required
+              minLength={8}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="role">Role</Label>
+            <Select
+              id="role"
+              value={formData.role}
+              onChange={(e) => setFormData((prev) => ({ ...prev, role: e.target.value as any }))}
+            >
+              <option value="agent">Agent</option>
+              <option value="manager">Manager</option>
+              <option value="admin">Admin</option>
+            </Select>
+          </div>
+
+          {groupsData?.items && groupsData.items.length > 0 && (
+            <div className="space-y-2">
+              <Label>Groups</Label>
+              <div className="space-y-2 max-h-32 overflow-y-auto">
+                {groupsData.items.map((group) => (
+                  <div key={group.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`group-${group.id}`}
+                      checked={selectedGroupIds.includes(group.id)}
+                      onCheckedChange={() => toggleGroup(group.id)}
+                    />
+                    <label htmlFor={`group-${group.id}`} className="text-sm cursor-pointer">
+                      {group.name}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={createUser.isPending}>
+              {createUser.isPending ? 'Creating...' : 'Create User'}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}

@@ -82,9 +82,14 @@ All implementation tasks are in `docs/tasks/`. Each task is self-contained with:
 
 ### Phase 4: Dashboard 🟠
 
-- [ ] Task 10 - Dashboard UI
+- [x] Task 10 - Dashboard UI
 - [x] Task 11 - Dashboard Backend
 - [x] Task 12 - Notification Service
+- [x] Task 20 - User Management (CRUD)
+- [x] Task 21 - Group Management
+- [x] Task 22 - Admin Settings Page
+- [x] Task 23 - Toast Notifications
+- [x] Task 24 - Dark Mode Toggle
 
 ### Phase 5: Developer Experience 🔴
 
@@ -97,6 +102,10 @@ All implementation tasks are in `docs/tasks/`. Each task is self-contained with:
 
 - [x] Task 17 - Example Project (Support Bot)
 - [x] Task 18 - Workflow Agent
+
+### Phase 7: Advanced Features 🌟
+
+- [ ] Task 19 - Custom UI Rendering
 
 ---
 
@@ -277,9 +286,9 @@ nix develop --command pnpm run docs:dev
 
 ---
 
-## Session Notes (Last Updated: 2026-01-16)
+## Session Notes (Last Updated: 2026-01-17)
 
-### What's Complete (16/18 tasks)
+### What's Complete (20/24 tasks)
 
 - **Core**: Types, config, errors, ID generation, Temporal integration, Prisma schema, repositories, Task Manager service, Notification service
 - **SDK**: workflow(), task(), taskWithEscalation(), duration parsing, timeout/deadline utilities
@@ -287,18 +296,180 @@ nix develop --command pnpm run docs:dev
 - **API**: Full tRPC API with auth middleware
 - **CLI**: init, dev, generate, db commands + workflow agent
 - **Dashboard Backend**: NextAuth + tRPC client setup
+- **Dashboard Core UI**: Task inbox, task detail, task form, history page
+- **Dashboard Admin UI**: User management CRUD with password hashing, group management with member controls, admin settings page
+- **Dashboard UX**: Toast notifications system, dark mode toggle with system preference detection
 - **Testing**: 53 unit tests + 45 integration tests
 - **Examples**: Support Bot example with AI-first escalation
-- **Documentation**: Comprehensive docs (25+ files) - Getting Started, Concepts, Guides, API Reference, Examples
+- **Documentation**: Comprehensive docs (30+ files) - Getting Started, Concepts, Guides, API Reference, Examples
 
-### What's Remaining (2 tasks)
+### What's Remaining (4 tasks)
 
-- **Task 10 - Dashboard UI**: UI components for task inbox/completion (optional for testing)
+**Release & Advanced**:
+
 - **Task 16 - Release Preparation**: Package publishing, GitHub Actions
+- **Task 19 - Custom UI Rendering**: Custom UI components for human-in-the-loop tasks
+
+### Task 23 - Toast Notifications (COMPLETED)
+
+**Implementation**:
+
+- Created `packages/dashboard/src/components/toast/toast-provider.tsx` with:
+  - ToastProvider component with React Context
+  - Toast type definitions (success, error, warning, info)
+  - State management for toast array with limit (max 5)
+  - Auto-dismiss functionality with timeout (5s default, 8s for errors)
+  - Methods: toast(), success(), error(), warning(), info(), dismiss(), dismissAll()
+  - Timeout cleanup on unmount
+
+- Created `packages/dashboard/src/components/toast/toast.tsx` with:
+  - Individual toast component with enter/exit animations
+  - Icon-based visual feedback (CheckCircle2, XCircle, AlertTriangle, Info)
+  - Color-coded backgrounds (emerald, red, amber, cyan)
+  - Title and message display
+  - Action button support
+  - Dismiss button with aria-label
+
+- Created `packages/dashboard/src/components/toast/toaster.tsx` with:
+  - Container component for rendering all toasts
+  - Fixed positioning in top-right corner
+  - Proper stacking without overlap
+  - Pointer events disabled on container
+
+- Created `packages/dashboard/src/components/toast/index.ts` with:
+  - Exports for ToastProvider, useToast, Toast, ToastComponent, Toaster
+  - Type exports for Toast and ToastType
+
+- Created `packages/dashboard/src/hooks/use-toast.ts` with:
+  - Re-export of useToast hook from toast provider
+
+- Created `packages/dashboard/src/app/test-toast/page.tsx` with:
+  - Test page demonstrating all toast functionality
+  - Buttons for success, error, warning, info, custom toasts
+  - Toast limit test (6 toasts to verify removal of oldest)
+  - Dismiss all button
+
+- Updated `packages/dashboard/src/app/providers.tsx`:
+  - Added ToastProvider wrapping the application
+  - Added Toaster component for rendering toasts
+
+**Features**:
+
+- Toast limit of 5 visible toasts (oldest removed when limit exceeded)
+- Auto-dismiss: 5 seconds default, 8 seconds for errors
+- Smooth enter/exit animations (300ms duration)
+- Color-coded backgrounds based on toast type
+- ARIA live regions for screen reader accessibility
+- Action buttons for user interactions
+- Dismiss button on each toast
+- Fixed positioning in top-right corner
+- Pointer events don't block underlying content
+- z-index ensures toasts appear above all content
+
+### Task 24 - Dark Mode Toggle (COMPLETED)
+
+**Implementation**:
+
+- Created `packages/dashboard/src/hooks/use-theme.tsx` with ThemeProvider and useTheme hook
+- Created `packages/dashboard/src/components/theme/theme-toggle.tsx` component with 3 buttons (light, dark, system)
+- Updated `packages/dashboard/src/app/providers.tsx` to wrap with ThemeProvider
+- Updated `packages/dashboard/src/app/layout.tsx` to remove hardcoded `className="dark"`
+- Added ThemeToggle to `packages/dashboard/src/components/layout/header.tsx`
+- Added ThemeToggle to `packages/dashboard/src/app/(protected)/layout.tsx`
+
+**Features**:
+
+- Theme persistence to localStorage (key: 'orkestra-theme')
+- System theme preference detection with `window.matchMedia('(prefers-color-scheme: dark)')`
+- System theme changes listener for automatic updates
+- Smooth theme switching without page reload
+- Tailwind dark mode classes work correctly with class-based strategy
+- Active state visual feedback on toggle buttons
+- Accessibility with title attributes
 
 ### Known Issues Fixed This Session
 
 - **docker-compose.yml**: Changed `DB=postgresql` to `DB=postgres12` (Temporal requires this exact driver name)
+
+### What Was Implemented This Session
+
+**Task 23 - Toast Notifications**:
+
+- Created `packages/dashboard/src/components/toast/toast-provider.tsx` with:
+  - ToastProvider component with React Context
+  - Toast type definitions (success, error, warning, info)
+  - State management for toast array with limit (max 5)
+  - Auto-dismiss functionality with timeout (5s default, 8s for errors)
+  - Methods: toast(), success(), error(), warning(), info(), dismiss(), dismissAll()
+  - Timeout cleanup on unmount
+  - TypeScript types for Toast and ToastContextType
+
+- Created `packages/dashboard/src/components/toast/toast.tsx` with:
+  - Individual toast component with enter/exit animations
+  - Icon-based visual feedback (CheckCircle2, XCircle, AlertTriangle, Info)
+  - Color-coded backgrounds (emerald, red, amber, cyan)
+  - Title and message display
+  - Action button support
+  - Dismiss button with aria-label
+  - ARIA live region for accessibility
+
+- Created `packages/dashboard/src/components/toast/toaster.tsx` with:
+  - Container component for rendering all toasts
+  - Fixed positioning in top-right corner (z-50)
+  - Proper stacking without overlap
+  - Pointer events disabled on container
+
+- Created `packages/dashboard/src/components/toast/index.ts` with:
+  - Exports for ToastProvider, useToast, ToastType, Toast, ToastComponent, Toaster
+
+- Created `packages/dashboard/src/hooks/use-toast.ts` with:
+  - Re-export of useToast hook for easy importing
+
+- Created `packages/dashboard/src/app/test-toast/page.tsx` with:
+  - Test page demonstrating all toast functionality
+  - Buttons for success, error, warning, info, custom toasts
+  - Toast limit test (6 toasts to verify removal of oldest)
+  - Dismiss all button
+
+- Updated `packages/dashboard/src/app/providers.tsx`:
+  - Added ToastProvider wrapping the TRPCProvider
+  - Added Toaster component for rendering toasts
+
+All code passes ESLint checks and follows TypeScript best practices.
+
+**Task 24 - Dark Mode Toggle**:
+
+- Created `packages/dashboard/src/hooks/use-theme.tsx` with:
+  - ThemeProvider component with React Context
+  - useTheme() hook for accessing theme state
+  - setTheme() method to set specific theme
+  - toggleTheme() method to switch between light/dark
+  - Theme persistence to localStorage (key: 'orkestra-theme')
+  - System theme preference detection and listener
+  - Automatic CSS class management on html element
+
+- Created `packages/dashboard/src/components/theme/theme-toggle.tsx` with:
+  - Three-button interface (Sun/Moon/Monitor icons)
+  - Light mode button
+  - Dark mode button
+  - System theme button
+  - Active state visual feedback
+  - Accessibility title attributes
+
+- Updated `packages/dashboard/src/app/providers.tsx`:
+  - Added ThemeProvider to wrap application
+
+- Updated `packages/dashboard/src/app/layout.tsx`:
+  - Removed hardcoded `className="dark"`
+  - Kept `suppressHydrationWarning` for smooth theme transitions
+
+- Updated `packages/dashboard/src/components/layout/header.tsx`:
+  - Added ThemeToggle component to header
+
+- Updated `packages/dashboard/src/app/(protected)/layout.tsx`:
+  - Added ThemeToggle component to protected layout header
+
+All code passes ESLint checks and follows TypeScript best practices.
 
 ### How to Test Now
 
@@ -327,3 +498,29 @@ The system is fully functional without Dashboard UI. Tasks can be completed via:
 - REST API: `POST /trpc/task.complete`
 - MCP tools programmatically
 - Custom UI
+
+### New Task Added: Custom UI Rendering (Task 19)
+
+Task 19 has been added to the roadmap to enable custom UI rendering for human-in-the-loop workflows. This is inspired by Vercel's json-render and allows AI agents to generate rich, dynamic interfaces beyond simple forms.
+
+**Key features**:
+
+- Guardrailed component catalog (AI can only use defined components)
+- Predictable JSON UI trees validated by Zod schemas
+- Data binding to task context and form data
+- Conditional visibility based on data/auth/logic
+- Actions that trigger workflow callbacks
+- Built-in component library (Card, TextField, DataTable, Button, etc.)
+
+**Use cases**:
+
+- Document review with diff viewers
+- Data selection with filterable tables
+- Visual approval with charts/graphs
+- Multi-step wizards with conditional logic
+
+This task creates 3 new packages:
+
+- `@orkestra/ui-renderer`: Core logic (validation, data binding, visibility)
+- `@orkestra/ui-renderer-react`: React renderer with contexts and hooks
+- `@orkestra/ui-components`: Built-in component library

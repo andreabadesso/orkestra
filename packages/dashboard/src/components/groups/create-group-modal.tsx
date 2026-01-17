@@ -1,0 +1,131 @@
+'use client';
+
+import { useState } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { trpc } from '@/lib/trpc';
+import { useToast } from '@/components/toast';
+import { Loader2 } from 'lucide-react';
+
+export function CreateGroupModal({
+  isOpen,
+  onClose,
+  onSuccess,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [formData, setFormData] = useState({
+    name: '',
+    slug: '',
+    description: '',
+  });
+
+  const createGroup = trpc.adminRouter2.createGroup.useMutation({
+    onSuccess: () => {
+      useToast().success('Group created successfully');
+      onSuccess();
+      onClose();
+      setFormData({ name: '', slug: '', description: '' });
+    },
+    onError: (error) => {
+      useToast().error(error.message);
+    },
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Generate slug from name if not provided
+    const slug = formData.slug || formData.name.toLowerCase().replace(/\s+/g, '-');
+
+    await createGroup.mutateAsync({
+      name: formData.name,
+      slug,
+      description: formData.description || undefined,
+      isAssignable: true,
+    });
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Create New Group</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Group Name</Label>
+            <Input
+              id="name"
+              value={formData.name}
+              onChange={(e) => {
+                setFormData((prev) => ({ ...prev, name: e.target.value }));
+                if (!formData.slug) {
+                  setFormData((prev) => ({
+                    ...prev,
+                    slug: e.target.value.toLowerCase().replace(/\s+/g, '-'),
+                  }));
+                }
+              }}
+              required
+              minLength={2}
+              maxLength={100}
+              placeholder="e.g., Support L1"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="slug">Slug (URL-friendly identifier)</Label>
+            <Input
+              id="slug"
+              value={formData.slug}
+              onChange={(e) => setFormData((prev) => ({ ...prev, slug: e.target.value }))}
+              required
+              minLength={2}
+              maxLength={100}
+              placeholder="e.g., support-l1"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="description">Description (Optional)</Label>
+            <Textarea
+              id="description"
+              value={formData.description}
+              onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
+              placeholder="Describe the group's purpose..."
+              rows={3}
+            />
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={createGroup.isPending}>
+              {createGroup.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                'Create Group'
+              )}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}

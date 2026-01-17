@@ -12,7 +12,10 @@
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "clean": "turbo run clean",
-    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\""
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "docs:dev": "pnpm --filter @orkestra/docs docs:dev",
+    "docs:build": "pnpm --filter @orkestra/docs docs:build",
+    "docs:preview": "pnpm --filter @orkestra/docs docs:preview"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",

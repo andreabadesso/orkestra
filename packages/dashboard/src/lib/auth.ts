@@ -135,15 +135,26 @@ export const authConfig: NextAuthConfig = {
       const { pathname } = request.nextUrl;
 
       // Public routes that don't require authentication
-      const publicRoutes = ['/login', '/api/auth'];
+      const publicRoutes = ['/login'];
       const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route));
 
       if (isPublicRoute) {
+        // If logged in and trying to access login, redirect to home
+        if (isLoggedIn) {
+          return Response.redirect(new URL('/', request.url));
+        }
         return true;
       }
 
       // All other routes require authentication
-      return isLoggedIn;
+      if (!isLoggedIn) {
+        // Redirect to login with callback
+        const loginUrl = new URL('/login', request.url);
+        loginUrl.searchParams.set('callbackUrl', pathname);
+        return Response.redirect(loginUrl);
+      }
+
+      return true;
     },
   },
 

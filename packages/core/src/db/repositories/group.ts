@@ -6,6 +6,7 @@
 
 import type { PrismaClient, Group, AssignmentStrategy, Prisma } from '@prisma/client';
 import type { RequestContext } from '../../context/index.js';
+import { InvalidStateError } from '../../errors/index.js';
 import {
   BaseRepository,
   EntityNotFoundError,
@@ -164,10 +165,7 @@ export class GroupRepository extends BaseRepository {
    * @param id - Group ID
    * @returns Group with members or null if not found
    */
-  async findByIdWithMembers(
-    ctx: RequestContext,
-    id: string
-  ): Promise<GroupWithMembers | null> {
+  async findByIdWithMembers(ctx: RequestContext, id: string): Promise<GroupWithMembers | null> {
     return this.prisma.group.findFirst({
       where: this.scopedFilters(ctx, { id }),
       include: {
@@ -291,11 +289,7 @@ export class GroupRepository extends BaseRepository {
    * @returns Updated group
    * @throws EntityNotFoundError if group not found
    */
-  async update(
-    ctx: RequestContext,
-    id: string,
-    input: UpdateGroupInput
-  ): Promise<Group> {
+  async update(ctx: RequestContext, id: string, input: UpdateGroupInput): Promise<Group> {
     await this.findByIdOrThrow(ctx, id);
 
     return this.prisma.group.update({
@@ -304,7 +298,9 @@ export class GroupRepository extends BaseRepository {
         ...(input.name !== undefined && { name: input.name }),
         ...(input.description !== undefined && { description: input.description }),
         ...(input.isAssignable !== undefined && { isAssignable: input.isAssignable }),
-        ...(input.assignmentStrategy !== undefined && { assignmentStrategy: input.assignmentStrategy }),
+        ...(input.assignmentStrategy !== undefined && {
+          assignmentStrategy: input.assignmentStrategy,
+        }),
         ...(input.metadata !== undefined && { metadata: input.metadata }),
       },
     });
@@ -317,9 +313,30 @@ export class GroupRepository extends BaseRepository {
    * @param id - Group ID
    * @returns Soft-deleted group
    * @throws EntityNotFoundError if group not found
+   * @throws InvalidStateError if group has active tasks
    */
   async softDelete(ctx: RequestContext, id: string): Promise<Group> {
     await this.findByIdOrThrow(ctx, id);
+
+    const activeTasks = await this.prisma.task.count({
+      where: {
+        assignedGroupId: id,
+        status: { in: ['pending', 'assigned', 'in_progress'] },
+        deletedAt: null,
+      },
+    });
+
+    if (activeTasks > 0) {
+      throw new InvalidStateError(
+        `Cannot delete group with ${activeTasks.toString()} active task(s)`,
+        {
+          details: {
+            groupId: id,
+            activeTaskCount: activeTasks,
+          },
+        }
+      );
+    }
 
     return this.prisma.group.update({
       where: { id },
@@ -375,11 +392,7 @@ export class GroupRepository extends BaseRepository {
    * @param excludeId - Group ID to exclude (for updates)
    * @returns True if slug is available
    */
-  async isSlugAvailable(
-    ctx: RequestContext,
-    slug: string,
-    excludeId?: string
-  ): Promise<boolean> {
+  async isSlugAvailable(ctx: RequestContext, slug: string, excludeId?: string): Promise<boolean> {
     const existing = await this.prisma.group.findFirst({
       where: {
         ...this.tenantScope(ctx),
@@ -398,11 +411,7 @@ export class GroupRepository extends BaseRepository {
    * @param groupId - Group ID
    * @param userIds - User IDs to add
    */
-  async addMembers(
-    ctx: RequestContext,
-    groupId: string,
-    userIds: string[]
-  ): Promise<void> {
+  async addMembers(ctx: RequestContext, groupId: string, userIds: string[]): Promise<void> {
     await this.findByIdOrThrow(ctx, groupId);
 
     const created = await this.prisma.groupMember.createMany({
@@ -431,11 +440,7 @@ export class GroupRepository extends BaseRepository {
    * @param groupId - Group ID
    * @param userIds - User IDs to remove
    */
-  async removeMembers(
-    ctx: RequestContext,
-    groupId: string,
-    userIds: string[]
-  ): Promise<void> {
+  async removeMembers(ctx: RequestContext, groupId: string, userIds: string[]): Promise<void> {
     await this.findByIdOrThrow(ctx, groupId);
 
     const deleted = await this.prisma.groupMember.deleteMany({
@@ -485,10 +490,7 @@ export class GroupRepository extends BaseRepository {
    * @param filter - Filter options
    * @returns Group count
    */
-  async count(
-    ctx: RequestContext,
-    filter?: Omit<GroupFilterOptions, 'search'>
-  ): Promise<number> {
+  async count(ctx: RequestContext, filter?: Omit<GroupFilterOptions, 'search'>): Promise<number> {
     const where: Prisma.GroupWhereInput = {
       ...this.tenantScope(ctx),
       ...this.softDeleteScope(filter?.includeSoftDeleted),
@@ -506,9 +508,7 @@ export class GroupRepository extends BaseRepository {
    */
   private isUniqueConstraintError(error: unknown): boolean {
     return (
-      error instanceof Error &&
-      'code' in error &&
-      (error as { code: string }).code === 'P2002'
+      error instanceof Error && 'code' in error && (error as { code: string }).code === 'P2002'
     );
   }
 }

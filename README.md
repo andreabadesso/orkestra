@@ -78,7 +78,7 @@ export const customerSupport = workflow('customer-support', async (ctx, input) =
 
 ## Project Status
 
-### Complete (16/18 tasks)
+### Complete (16/19 tasks)
 
 - Core engine (Temporal integration, Task Manager)
 - SDK (workflow, task, escalation helpers)
@@ -89,10 +89,11 @@ export const customerSupport = workflow('customer-support', async (ctx, input) =
 - Example project (support bot with AI-first escalation)
 - **Documentation** (comprehensive guides and API reference)
 
-### In Progress (2/18 tasks)
+### In Progress (3/19 tasks)
 
 - Dashboard UI (web interface for task completion) - Optional
 - Release preparation (npm publishing, CI/CD)
+- Custom UI Rendering (AI-generated rich interfaces for human tasks)
 
 **Note**: The system is fully functional via API and MCP. Dashboard UI is optional.
 

@@ -1,0 +1,237 @@
+'use client';
+
+import { useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { trpc } from '@/lib/trpc';
+import { useToast } from '@/components/toast';
+import { X, Mail, Shield, Loader2, UserMinus, UserPlus } from 'lucide-react';
+
+export function ViewMembersModal({
+  isOpen,
+  onClose,
+  group,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  group: any;
+}) {
+  const [search, setSearch] = useState('');
+
+  // Get group with members
+  const { data: groupData, refetch } = trpc.adminRouter2.getGroup.useQuery(
+    {
+      id: group.id,
+      includeMembers: true,
+    },
+    {
+      enabled: isOpen,
+    }
+  );
+
+  // Get all available users to add
+  const { data: usersData } = trpc.adminRouter2.listUsers.useQuery(
+    {
+      pagination: { skip: 0, take: 100 },
+    },
+    {
+      enabled: isOpen,
+    }
+  );
+
+  const addMember = trpc.adminRouter2.addGroupMember.useMutation({
+    onSuccess: () => {
+      useToast().success('Member added successfully');
+      refetch();
+    },
+    onError: (error) => {
+      useToast().error(error.message);
+    },
+  });
+
+  const removeMember = trpc.adminRouter2.removeGroupMember.useMutation({
+    onSuccess: () => {
+      useToast().success('Member removed successfully');
+      refetch();
+    },
+    onError: (error) => {
+      useToast().error(error.message);
+    },
+  });
+
+  // Type assertion to handle members from getGroup with includeMembers
+  const groupMembers = (groupData as any)?.members || group.members || [];
+  const allUsers = usersData?.items || [];
+
+  // Filter current members by search
+  const filteredMembers = groupMembers.filter(
+    (member: any) =>
+      !search ||
+      member.user?.name?.toLowerCase().includes(search.toLowerCase()) ||
+      member.user?.email?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  // Get users not in the group
+  const filteredAvailableUsers = allUsers.filter(
+    (user: any) => !groupMembers.some((m: any) => m.id === user.id)
+  );
+
+  // Filter available users by search
+  const availableUsersToShow = filteredAvailableUsers.filter(
+    (user: any) =>
+      !search ||
+      user.name.toLowerCase().includes(search.toLowerCase()) ||
+      user.email.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const handleAddMember = async (userId: string) => {
+    await addMember.mutateAsync({ groupId: group.id, userId });
+  };
+
+  const handleRemoveMember = async (userId: string) => {
+    await removeMember.mutateAsync({ groupId: group.id, userId });
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl">
+        <DialogHeader>
+          <div className="flex items-center justify-between">
+            <DialogTitle>Members of {group.name}</DialogTitle>
+            <Button variant="ghost" size="icon" onClick={onClose}>
+              <X className="w-5 h-5" />
+            </Button>
+          </div>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          {/* Search */}
+          <div>
+            <Input
+              placeholder="Search users..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+
+          {/* Current Members */}
+          <div>
+            <h3 className="font-mono text-sm text-muted-foreground mb-3">
+              CURRENT MEMBERS ({groupMembers.length})
+            </h3>
+            {filteredMembers.length > 0 ? (
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {filteredMembers.map((member: any) => (
+                  <div
+                    key={member.id}
+                    className="flex items-center justify-between p-3 rounded-lg bg-control-panel/50 border border-control-border"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-control-cyan to-control-amber flex items-center justify-center text-xs font-bold">
+                        {member.user?.name?.charAt(0).toUpperCase() || '?'}
+                      </div>
+                      <div>
+                        <p className="font-mono font-medium text-sm">
+                          {member.user?.name || 'Unknown'}
+                        </p>
+                        <div className="flex items-center gap-1">
+                          <Mail className="w-3 h-3 text-muted-foreground" />
+                          <p className="text-xs text-muted-foreground">
+                            {member.user?.email || 'N/A'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="font-mono text-[10px]">
+                        <Shield className="w-3 h-3 mr-1" />
+                        {member.user?.role?.toUpperCase() || 'UNKNOWN'}
+                      </Badge>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleRemoveMember(member.user?.id)}
+                        disabled={removeMember.isPending}
+                        title="Remove member"
+                      >
+                        {removeMember.isPending ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <UserMinus className="w-4 h-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">No members found</div>
+            )}
+          </div>
+
+          {/* Add Members */}
+          <div>
+            <h3 className="font-mono text-sm text-muted-foreground mb-3">
+              ADD MEMBERS ({availableUsersToShow.length})
+            </h3>
+            {availableUsersToShow.length > 0 ? (
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {availableUsersToShow.slice(0, 20).map((user: any) => (
+                  <div
+                    key={user.id}
+                    className="flex items-center justify-between p-3 rounded-lg bg-control-bg border border-control-border hover:border-control-cyan/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-control-emerald to-control-cyan flex items-center justify-center text-xs font-bold">
+                        {user.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="font-mono font-medium text-sm">{user.name}</p>
+                        <div className="flex items-center gap-1">
+                          <Mail className="w-3 h-3 text-muted-foreground" />
+                          <p className="text-xs text-muted-foreground">{user.email}</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="font-mono text-[10px]">
+                        <Shield className="w-3 h-3 mr-1" />
+                        {user.role.toUpperCase()}
+                      </Badge>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleAddMember(user.id)}
+                        disabled={addMember.isPending}
+                      >
+                        {addMember.isPending ? (
+                          <>
+                            <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                            Adding
+                          </>
+                        ) : (
+                          <>
+                            <UserPlus className="w-3 h-3 mr-2" />
+                            Add
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                {search
+                  ? 'No users match your search'
+                  : 'No users available to add (all users are already in this group)'}
+              </div>
+            )}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

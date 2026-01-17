@@ -18,12 +18,14 @@
   "scripts": {
     "build": "tsc --build",
     "dev": "tsc --build --watch",
+    "start": "node dist/start.js",
     "test": "vitest run",
     "lint": "eslint src",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist .turbo *.tsbuildinfo"
   },
   "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
     "@types/cors": "^2.8.19",
     "@types/jsonwebtoken": "^9.0.10",
     "typescript": "^5.7.2"
@@ -32,6 +34,7 @@
     "@orkestra/core": "workspace:*",
     "@prisma/client": "^6.0.0",
     "@trpc/server": "^11.8.1",
+    "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "jsonwebtoken": "^9.0.3",
     "zod": "^4.3.5"

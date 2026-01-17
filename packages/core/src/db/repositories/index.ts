@@ -24,6 +24,13 @@ export {
   type TenantSortField,
 } from './tenant.js';
 
+// TenantSettings repository
+export {
+  TenantSettingsRepository,
+  type CreateTenantSettingsInput,
+  type UpdateTenantSettingsInput,
+} from './tenant-settings.js';
+
 // User repository
 export {
   UserRepository,

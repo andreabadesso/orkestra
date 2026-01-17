@@ -67,7 +67,7 @@ export {
 } from './repositories/index.js';
 
 /**
- * Create all repository instances with a shared Prisma client
+ * Create repository instances
  *
  * @param prismaClient - Optional Prisma client instance (defaults to singleton)
  * @returns Object containing all repository instances
@@ -81,16 +81,36 @@ export {
  * const repos = createRepositories(prisma);
  * ```
  */
-export function createRepositories(prismaClient?: import('@prisma/client').PrismaClient) {
-  const client = prismaClient ?? require('./client.js').prisma;
+export async function createRepositories(prismaClient?: import('@prisma/client').PrismaClient) {
+  const { prisma } = await import('./client.js');
+  const client = prismaClient ?? prisma;
+
+  const [
+    { TenantRepository },
+    { TenantSettingsRepository },
+    { UserRepository },
+    { GroupRepository },
+    { TaskRepository },
+    { ConversationRepository },
+    { AuditRepository },
+  ] = await Promise.all([
+    import('./repositories/tenant.js'),
+    import('./repositories/tenant-settings.js'),
+    import('./repositories/user.js'),
+    import('./repositories/group.js'),
+    import('./repositories/task.js'),
+    import('./repositories/conversation.js'),
+    import('./repositories/audit.js'),
+  ]);
 
   return {
-    tenant: new (require('./repositories/tenant.js').TenantRepository)(client),
-    user: new (require('./repositories/user.js').UserRepository)(client),
-    group: new (require('./repositories/group.js').GroupRepository)(client),
-    task: new (require('./repositories/task.js').TaskRepository)(client),
-    conversation: new (require('./repositories/conversation.js').ConversationRepository)(client),
-    audit: new (require('./repositories/audit.js').AuditRepository)(client),
+    tenant: new TenantRepository(client),
+    tenantSettings: new TenantSettingsRepository(client),
+    user: new UserRepository(client),
+    group: new GroupRepository(client),
+    task: new TaskRepository(client),
+    conversation: new ConversationRepository(client),
+    audit: new AuditRepository(client),
   };
 }
 
@@ -99,6 +119,7 @@ export function createRepositories(prismaClient?: import('@prisma/client').Prism
  */
 export interface Repositories {
   tenant: import('./repositories/tenant.js').TenantRepository;
+  tenantSettings: import('./repositories/tenant-settings.js').TenantSettingsRepository;
   user: import('./repositories/user.js').UserRepository;
   group: import('./repositories/group.js').GroupRepository;
   task: import('./repositories/task.js').TaskRepository;

@@ -25,6 +25,9 @@
             # Database tools
             postgresql_15
 
+            # Prisma
+            prisma-engines
+
             # Useful utilities
             jq
             curl
@@ -35,8 +38,6 @@
             echo "Orkestra development environment loaded"
             echo "Node.js: $(node --version)"
             echo "pnpm: $(pnpm --version)"
-            export PRISMA_QUERY_ENGINE_LIBRARY="${pkgs.prisma-engines}/lib/libquery_engine.node"
-            export PRISMA_SCHEMA_ENGINE_BINARY="${pkgs.prisma-engines}/bin/schema-engine"
           '';
         };
       }

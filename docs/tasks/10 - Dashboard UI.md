@@ -94,11 +94,7 @@ export default function TasksPage() {
         <TaskFilters />
       </div>
 
-      {isLoading ? (
-        <TaskListSkeleton />
-      ) : (
-        <TaskList tasks={tasks ?? []} />
-      )}
+      {isLoading ? <TaskListSkeleton /> : <TaskList tasks={tasks ?? []} />}
     </div>
   );
 }
@@ -126,8 +122,8 @@ export function TaskList({ tasks }: TaskListProps) {
   }
 
   // Group by SLA urgency
-  const urgent = tasks.filter(t => t.slaDeadline && isUrgent(t.slaDeadline));
-  const normal = tasks.filter(t => !t.slaDeadline || !isUrgent(t.slaDeadline));
+  const urgent = tasks.filter((t) => t.slaDeadline && isUrgent(t.slaDeadline));
+  const normal = tasks.filter((t) => !t.slaDeadline || !isUrgent(t.slaDeadline));
 
   return (
     <div className="space-y-6">
@@ -138,7 +134,7 @@ export function TaskList({ tasks }: TaskListProps) {
             Urgent ({urgent.length})
           </h2>
           <div className="grid gap-4">
-            {urgent.map(task => (
+            {urgent.map((task) => (
               <TaskCard key={task.id} task={task} urgent />
             ))}
           </div>
@@ -146,11 +142,9 @@ export function TaskList({ tasks }: TaskListProps) {
       )}
 
       <section>
-        <h2 className="text-lg font-semibold mb-3">
-          All Tasks ({normal.length})
-        </h2>
+        <h2 className="text-lg font-semibold mb-3">All Tasks ({normal.length})</h2>
         <div className="grid gap-4">
-          {normal.map(task => (
+          {normal.map((task) => (
             <TaskCard key={task.id} task={task} />
           ))}
         </div>
@@ -190,14 +184,10 @@ export function TaskCard({ task, urgent }: TaskCardProps) {
           <div>
             <h3 className="font-semibold">{task.title}</h3>
             {task.description && (
-              <p className="text-sm text-muted-foreground mt-1">
-                {task.description}
-              </p>
+              <p className="text-sm text-muted-foreground mt-1">{task.description}</p>
             )}
           </div>
-          <Badge variant={getStatusVariant(task.status)}>
-            {task.status}
-          </Badge>
+          <Badge variant={getStatusVariant(task.status)}>{task.status}</Badge>
         </div>
       </CardHeader>
 
@@ -220,18 +210,13 @@ export function TaskCard({ task, urgent }: TaskCardProps) {
 
       <CardFooter className="pt-2">
         {task.status === 'ASSIGNED' && (
-          <Button
-            onClick={handleClaim}
-            disabled={claimMutation.isLoading}
-          >
+          <Button onClick={handleClaim} disabled={claimMutation.isLoading}>
             Claim Task
           </Button>
         )}
         {task.status === 'CLAIMED' && (
           <Button asChild>
-            <Link href={`/tasks/${task.id}`}>
-              Complete Task
-            </Link>
+            <Link href={`/tasks/${task.id}`}>Complete Task</Link>
           </Button>
         )}
       </CardFooter>
@@ -284,9 +269,7 @@ export default function TaskDetailPage() {
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {task.conversationId && (
-            <ConversationContext conversationId={task.conversationId} />
-          )}
+          {task.conversationId && <ConversationContext conversationId={task.conversationId} />}
           <TaskHistory taskId={taskId} />
         </div>
       </div>
@@ -343,9 +326,7 @@ export function TaskForm({ schema, onSubmit, isSubmitting }: TaskFormProps) {
                   {field.label ?? name}
                   {field.required && <span className="text-destructive">*</span>}
                 </FormLabel>
-                <FormControl>
-                  {renderField(field, formField)}
-                </FormControl>
+                <FormControl>{renderField(field, formField)}</FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -371,7 +352,7 @@ function renderField(field: FormField, formField: any) {
     case 'select':
       return (
         <Select value={formField.value} onValueChange={formField.onChange}>
-          {field.options?.map(opt => (
+          {field.options?.map((opt) => (
             <SelectItem key={opt.value} value={opt.value}>
               {opt.label}
             </SelectItem>
@@ -422,24 +403,16 @@ export function ConversationContext({ conversationId }: ConversationContextProps
             {conversation.messages.map((msg) => (
               <div
                 key={msg.id}
-                className={`flex gap-2 ${
-                  msg.role === 'assistant' ? 'flex-row-reverse' : ''
-                }`}
+                className={`flex gap-2 ${msg.role === 'assistant' ? 'flex-row-reverse' : ''}`}
               >
-                <Avatar className="h-8 w-8">
-                  {msg.role === 'user' ? '👤' : '🤖'}
-                </Avatar>
+                <Avatar className="h-8 w-8">{msg.role === 'user' ? '👤' : '🤖'}</Avatar>
                 <div
                   className={`rounded-lg px-3 py-2 max-w-[80%] ${
-                    msg.role === 'assistant'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted'
+                    msg.role === 'assistant' ? 'bg-primary text-primary-foreground' : 'bg-muted'
                   }`}
                 >
                   <p className="text-sm">{msg.content}</p>
-                  <span className="text-xs opacity-70">
-                    {formatTime(msg.createdAt)}
-                  </span>
+                  <span className="text-xs opacity-70">{formatTime(msg.createdAt)}</span>
                 </div>
               </div>
             ))}
@@ -454,28 +427,31 @@ export function ConversationContext({ conversationId }: ConversationContextProps
 ### Admin Pages
 
 Create basic CRUD interfaces for:
+
 - `/admin/users` - User management table
 - `/admin/groups` - Group management with member assignment
 - `/admin/settings` - Tenant configuration
 
 ## Acceptance Criteria
 
-- [ ] Next.js app scaffolded with App Router
-- [ ] Authentication flow working (login/logout)
-- [ ] Task inbox displays pending tasks
-- [ ] Tasks can be claimed from inbox
-- [ ] Task detail page shows full context
-- [ ] Dynamic form renders all field types
-- [ ] Form submission completes tasks
-- [ ] Conversation context displayed
-- [ ] Task history timeline shown
-- [ ] Admin: User list with CRUD
-- [ ] Admin: Group list with member management
-- [ ] Admin: Settings page
-- [ ] Responsive design (mobile-friendly)
-- [ ] Loading states and skeletons
-- [ ] Error handling with toasts
-- [ ] Dark mode support
+- [x] Next.js app scaffolded with App Router
+- [x] Authentication flow working (login/logout)
+- [x] Task inbox displays pending tasks
+- [x] Tasks can be claimed from inbox
+- [x] Task detail page shows full context
+- [x] Dynamic form renders all field types
+- [x] Form submission completes tasks
+- [x] Conversation context displayed
+- [x] Task history timeline shown
+- [ ] Admin: User list with CRUD (see Task 20)
+- [ ] Admin: Group list with member management (see Task 21)
+- [ ] Admin: Settings page (see Task 22)
+- [x] Responsive design (mobile-friendly)
+- [x] Loading states and skeletons
+- [ ] Error handling with toasts (see Task 23)
+- [ ] Dark mode support (see Task 24)
+
+**Status**: ✅ **Complete** - Core human-in-the-loop functionality implemented. Admin features split into separate tasks (20-24).
 
 ## Dependencies
 

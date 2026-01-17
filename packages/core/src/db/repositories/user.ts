@@ -33,6 +33,8 @@ export interface CreateUserInput {
   preferences?: Prisma.InputJsonValue;
   /** Additional metadata */
   metadata?: Prisma.InputJsonValue;
+  /** Password (will be hashed if provided) */
+  password?: string;
 }
 
 /**
@@ -117,6 +119,7 @@ export class UserRepository extends BaseRepository {
           avatarUrl: input.avatarUrl ?? null,
           preferences: input.preferences ?? {},
           metadata: input.metadata ?? {},
+          ...(input.password !== undefined && { password: input.password }),
         },
       });
     } catch (error) {
@@ -173,10 +176,7 @@ export class UserRepository extends BaseRepository {
    * @param id - User ID
    * @returns User with groups or null if not found
    */
-  async findByIdWithGroups(
-    ctx: RequestContext,
-    id: string
-  ): Promise<UserWithGroups | null> {
+  async findByIdWithGroups(ctx: RequestContext, id: string): Promise<UserWithGroups | null> {
     return this.prisma.user.findFirst({
       where: this.scopedFilters(ctx, { id }),
       include: {
@@ -237,16 +237,12 @@ export class UserRepository extends BaseRepository {
 
     // Apply status filter
     if (filter?.status) {
-      where.status = Array.isArray(filter.status)
-        ? { in: filter.status }
-        : filter.status;
+      where.status = Array.isArray(filter.status) ? { in: filter.status } : filter.status;
     }
 
     // Apply role filter
     if (filter?.role) {
-      where.role = Array.isArray(filter.role)
-        ? { in: filter.role }
-        : filter.role;
+      where.role = Array.isArray(filter.role) ? { in: filter.role } : filter.role;
     }
 
     // Apply group filter
@@ -302,11 +298,7 @@ export class UserRepository extends BaseRepository {
    * @throws EntityNotFoundError if user not found
    * @throws UniqueConstraintError if email already exists
    */
-  async update(
-    ctx: RequestContext,
-    id: string,
-    input: UpdateUserInput
-  ): Promise<User> {
+  async update(ctx: RequestContext, id: string, input: UpdateUserInput): Promise<User> {
     // First verify user exists in tenant
     await this.findByIdOrThrow(ctx, id);
 
@@ -414,11 +406,7 @@ export class UserRepository extends BaseRepository {
    * @param excludeId - User ID to exclude (for updates)
    * @returns True if email is available
    */
-  async isEmailAvailable(
-    ctx: RequestContext,
-    email: string,
-    excludeId?: string
-  ): Promise<boolean> {
+  async isEmailAvailable(ctx: RequestContext, email: string, excludeId?: string): Promise<boolean> {
     const existing = await this.prisma.user.findFirst({
       where: {
         ...this.tenantScope(ctx),
@@ -437,11 +425,7 @@ export class UserRepository extends BaseRepository {
    * @param userId - User ID
    * @param groupIds - Group IDs to add
    */
-  async addToGroups(
-    ctx: RequestContext,
-    userId: string,
-    groupIds: string[]
-  ): Promise<void> {
+  async addToGroups(ctx: RequestContext, userId: string, groupIds: string[]): Promise<void> {
     await this.findByIdOrThrow(ctx, userId);
 
     await this.prisma.groupMember.createMany({
@@ -470,11 +454,7 @@ export class UserRepository extends BaseRepository {
    * @param userId - User ID
    * @param groupIds - Group IDs to remove
    */
-  async removeFromGroups(
-    ctx: RequestContext,
-    userId: string,
-    groupIds: string[]
-  ): Promise<void> {
+  async removeFromGroups(ctx: RequestContext, userId: string, groupIds: string[]): Promise<void> {
     await this.findByIdOrThrow(ctx, userId);
 
     await this.prisma.groupMember.deleteMany({
@@ -524,25 +504,18 @@ export class UserRepository extends BaseRepository {
    * @param filter - Filter options
    * @returns User count
    */
-  async count(
-    ctx: RequestContext,
-    filter?: Omit<UserFilterOptions, 'search'>
-  ): Promise<number> {
+  async count(ctx: RequestContext, filter?: Omit<UserFilterOptions, 'search'>): Promise<number> {
     const where: Prisma.UserWhereInput = {
       ...this.tenantScope(ctx),
       ...this.softDeleteScope(filter?.includeSoftDeleted),
     };
 
     if (filter?.status) {
-      where.status = Array.isArray(filter.status)
-        ? { in: filter.status }
-        : filter.status;
+      where.status = Array.isArray(filter.status) ? { in: filter.status } : filter.status;
     }
 
     if (filter?.role) {
-      where.role = Array.isArray(filter.role)
-        ? { in: filter.role }
-        : filter.role;
+      where.role = Array.isArray(filter.role) ? { in: filter.role } : filter.role;
     }
 
     return this.prisma.user.count({ where });
@@ -553,9 +526,7 @@ export class UserRepository extends BaseRepository {
    */
   private isUniqueConstraintError(error: unknown): boolean {
     return (
-      error instanceof Error &&
-      'code' in error &&
-      (error as { code: string }).code === 'P2002'
+      error instanceof Error && 'code' in error && (error as { code: string }).code === 'P2002'
     );
   }
 }

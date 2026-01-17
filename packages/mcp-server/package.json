@@ -12,8 +12,12 @@
       "import": "./dist/index.js"
     }
   },
+  "bin": {
+    "orkestra-mcp": "./bin/orkestra-mcp.js"
+  },
   "files": [
-    "dist"
+    "dist",
+    "bin"
   ],
   "scripts": {
     "build": "tsc --build",
