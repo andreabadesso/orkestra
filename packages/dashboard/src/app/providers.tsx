@@ -1,0 +1,82 @@
+/**
+ * React Providers
+ *
+ * Wraps the application with necessary providers:
+ * - SessionProvider for NextAuth
+ * - QueryClientProvider for React Query
+ * - tRPC Provider for type-safe API access
+ */
+
+'use client';
+
+import { useState, type ReactNode } from 'react';
+import { SessionProvider, useSession } from 'next-auth/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { trpc, createTRPCLinks } from '@/lib/trpc';
+
+/**
+ * Props for the Providers component
+ */
+interface ProvidersProps {
+  children: ReactNode;
+}
+
+/**
+ * Inner providers that need session access
+ */
+function TRPCProvider({ children }: ProvidersProps) {
+  const { data: session } = useSession();
+
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            // With SSR, we usually want to set some default staleTime
+            // above 0 to avoid refetching immediately on the client
+            staleTime: 60 * 1000, // 1 minute
+            retry: (failureCount, error) => {
+              // Don't retry on 4xx errors
+              if (error instanceof Error && error.message.includes('4')) {
+                return false;
+              }
+              return failureCount < 3;
+            },
+          },
+          mutations: {
+            retry: false,
+          },
+        },
+      })
+  );
+
+  const [trpcClient] = useState(() =>
+    trpc.createClient({
+      links: createTRPCLinks(() => session?.accessToken ?? null),
+    })
+  );
+
+  return (
+    <trpc.Provider client={trpcClient} queryClient={queryClient}>
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    </trpc.Provider>
+  );
+}
+
+/**
+ * Root providers component
+ *
+ * Wraps the application with all necessary providers in the correct order:
+ * 1. SessionProvider (outermost - provides auth context)
+ * 2. TRPCProvider (uses session for auth tokens)
+ * 3. QueryClientProvider (provided by TRPCProvider)
+ */
+export function Providers({ children }: ProvidersProps) {
+  return (
+    <SessionProvider>
+      <TRPCProvider>{children}</TRPCProvider>
+    </SessionProvider>
+  );
+}
+
+export default Providers;

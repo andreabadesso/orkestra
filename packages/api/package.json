@@ -1,0 +1,39 @@
+{
+  "name": "@orkestra/api",
+  "version": "0.0.1",
+  "description": "REST and tRPC API for Orkestra",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc --build",
+    "dev": "tsc --build --watch",
+    "test": "vitest run",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist .turbo *.tsbuildinfo"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/jsonwebtoken": "^9.0.10",
+    "typescript": "^5.7.2"
+  },
+  "dependencies": {
+    "@orkestra/core": "workspace:*",
+    "@prisma/client": "^6.0.0",
+    "@trpc/server": "^11.8.1",
+    "cors": "^2.8.5",
+    "jsonwebtoken": "^9.0.3",
+    "zod": "^4.3.5"
+  }
+}

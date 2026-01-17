@@ -1,0 +1,426 @@
+// Orkestra Database Schema
+// This schema defines all the core entities for the Orkestra orchestration platform
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// Enums
+// =============================================================================
+
+enum TenantStatus {
+  active
+  suspended
+  pending
+  archived
+}
+
+enum UserRole {
+  admin
+  manager
+  operator
+  viewer
+}
+
+enum UserStatus {
+  active
+  inactive
+  pending
+  suspended
+}
+
+enum TaskStatus {
+  pending
+  assigned
+  in_progress
+  completed
+  cancelled
+  expired
+  escalated
+}
+
+enum TaskPriority {
+  low
+  medium
+  high
+  urgent
+}
+
+enum AssignmentStrategy {
+  round_robin
+  least_loaded
+  manual
+  random
+}
+
+enum ConversationStatus {
+  active
+  resolved
+  abandoned
+  archived
+}
+
+enum ConversationChannel {
+  web
+  api
+  slack
+  email
+  sms
+  custom
+}
+
+enum MessageRole {
+  user
+  assistant
+  system
+  human_operator
+}
+
+enum MessageContentType {
+  text
+  markdown
+  html
+  json
+}
+
+enum AuditEventType {
+  // Tenant events
+  tenant_created
+  tenant_updated
+  tenant_suspended
+  tenant_activated
+  tenant_archived
+  // User events
+  user_created
+  user_updated
+  user_deleted
+  user_login
+  user_logout
+  // Group events
+  group_created
+  group_updated
+  group_deleted
+  group_member_added
+  group_member_removed
+  // Task events
+  task_created
+  task_assigned
+  task_claimed
+  task_unclaimed
+  task_started
+  task_completed
+  task_cancelled
+  task_expired
+  task_escalated
+  task_updated
+  // Conversation events
+  conversation_created
+  conversation_updated
+  conversation_resolved
+  conversation_archived
+  message_sent
+  // Workflow events
+  workflow_started
+  workflow_completed
+  workflow_failed
+  workflow_cancelled
+}
+
+// =============================================================================
+// Tenant Model - Root entity for multi-tenancy
+// =============================================================================
+
+model Tenant {
+  id        String       @id @default(cuid())
+  name      String
+  slug      String       @unique
+  status    TenantStatus @default(pending)
+  config    Json         @default("{}")
+  limits    Json         @default("{}")
+  metadata  Json         @default("{}")
+  createdAt DateTime     @default(now()) @map("created_at")
+  updatedAt DateTime     @updatedAt @map("updated_at")
+  deletedAt DateTime?    @map("deleted_at")
+
+  // Relations
+  users         User[]
+  groups        Group[]
+  tasks         Task[]
+  conversations Conversation[]
+  messages      Message[]
+  auditEvents   AuditEvent[]
+
+  @@index([status])
+  @@index([slug])
+  @@index([deletedAt])
+  @@map("tenants")
+}
+
+// =============================================================================
+// User Model - Users within a tenant
+// =============================================================================
+
+model User {
+  id          String     @id @default(cuid())
+  tenantId    String     @map("tenant_id")
+  email       String
+  name        String
+  avatarUrl   String?    @map("avatar_url")
+  status      UserStatus @default(pending)
+  role        UserRole   @default(operator)
+  preferences Json       @default("{}")
+  lastLoginAt DateTime?  @map("last_login_at")
+  metadata    Json       @default("{}")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+  deletedAt   DateTime?  @map("deleted_at")
+
+  // Relations
+  tenant           Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  groupMemberships GroupMember[]
+  assignedTasks    Task[]        @relation("AssignedUser")
+  claimedTasks     Task[]        @relation("ClaimedUser")
+  completedTasks   Task[]        @relation("CompletedUser")
+  sentMessages     Message[]
+  auditEvents      AuditEvent[]
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@index([status])
+  @@index([role])
+  @@index([deletedAt])
+  @@map("users")
+}
+
+// =============================================================================
+// Group Model - User groups for task assignment
+// =============================================================================
+
+model Group {
+  id                 String             @id @default(cuid())
+  tenantId           String             @map("tenant_id")
+  name               String
+  slug               String
+  description        String?
+  isAssignable       Boolean            @default(true) @map("is_assignable")
+  assignmentStrategy AssignmentStrategy @default(round_robin) @map("assignment_strategy")
+  memberCount        Int                @default(0) @map("member_count")
+  metadata           Json               @default("{}")
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
+  deletedAt          DateTime?          @map("deleted_at")
+
+  // Relations
+  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  members       GroupMember[]
+  assignedTasks Task[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@index([isAssignable])
+  @@index([deletedAt])
+  @@map("groups")
+}
+
+// =============================================================================
+// GroupMember Model - Many-to-many relationship between users and groups
+// =============================================================================
+
+model GroupMember {
+  id        String   @id @default(cuid())
+  groupId   String   @map("group_id")
+  userId    String   @map("user_id")
+  joinedAt  DateTime @default(now()) @map("joined_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@index([groupId])
+  @@index([userId])
+  @@map("group_members")
+}
+
+// =============================================================================
+// Task Model - Human tasks with form schemas and SLAs
+// =============================================================================
+
+model Task {
+  id             String       @id @default(cuid())
+  tenantId       String       @map("tenant_id")
+  workflowId     String?      @map("workflow_id")
+  workflowRunId  String?      @map("workflow_run_id")
+  type           String
+  title          String
+  description    String?
+  status         TaskStatus   @default(pending)
+  priority       TaskPriority @default(medium)
+  formSchema     Json         @map("form_schema")
+  formData       Json?        @map("form_data")
+  context        Json         @default("{}")
+  assignedUserId String?      @map("assigned_user_id")
+  assignedGroupId String?     @map("assigned_group_id")
+  claimedBy      String?      @map("claimed_by")
+  claimedAt      DateTime?    @map("claimed_at")
+  dueAt          DateTime?    @map("due_at")
+  warnAt         DateTime?    @map("warn_at")
+  escalationConfig Json?      @map("escalation_config")
+  completedBy    String?      @map("completed_by")
+  completedAt    DateTime?    @map("completed_at")
+  metadata       Json         @default("{}")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  deletedAt      DateTime?    @map("deleted_at")
+
+  // Relations
+  tenant        Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assignedUser  User?        @relation("AssignedUser", fields: [assignedUserId], references: [id])
+  assignedGroup Group?       @relation(fields: [assignedGroupId], references: [id])
+  claimedUser   User?        @relation("ClaimedUser", fields: [claimedBy], references: [id])
+  completedUser User?        @relation("CompletedUser", fields: [completedBy], references: [id])
+  history       TaskHistory[]
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([priority])
+  @@index([workflowId])
+  @@index([workflowRunId])
+  @@index([assignedUserId])
+  @@index([assignedGroupId])
+  @@index([claimedBy])
+  @@index([dueAt])
+  @@index([deletedAt])
+  @@index([tenantId, status])
+  @@index([tenantId, assignedUserId, status])
+  @@index([tenantId, assignedGroupId, status])
+  @@map("tasks")
+}
+
+// =============================================================================
+// TaskHistory Model - Task action history for audit trail
+// =============================================================================
+
+model TaskHistory {
+  id        String   @id @default(cuid())
+  taskId    String   @map("task_id")
+  action    String
+  userId    String?  @map("user_id")
+  data      Json     @default("{}")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("task_history")
+}
+
+// =============================================================================
+// Conversation Model - Context conversations for tasks and workflows
+// =============================================================================
+
+model Conversation {
+  id           String             @id @default(cuid())
+  tenantId     String             @map("tenant_id")
+  workflowId   String?            @map("workflow_id")
+  title        String?
+  status       ConversationStatus @default(active)
+  channel      ConversationChannel
+  externalId   String?            @map("external_id")
+  participants Json               @default("[]")
+  messageCount Int                @default(0) @map("message_count")
+  summary      String?
+  tags         String[]           @default([])
+  metadata     Json               @default("{}")
+  createdAt    DateTime           @default(now()) @map("created_at")
+  updatedAt    DateTime           @updatedAt @map("updated_at")
+  deletedAt    DateTime?          @map("deleted_at")
+
+  // Relations
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([channel])
+  @@index([workflowId])
+  @@index([externalId])
+  @@index([deletedAt])
+  @@index([tenantId, status])
+  @@map("conversations")
+}
+
+// =============================================================================
+// Message Model - Messages within conversations
+// =============================================================================
+
+model Message {
+  id             String             @id @default(cuid())
+  conversationId String             @map("conversation_id")
+  tenantId       String             @map("tenant_id")
+  role           MessageRole
+  userId         String?            @map("user_id")
+  senderName     String             @map("sender_name")
+  contentType    MessageContentType @default(text) @map("content_type")
+  content        String
+  attachments    Json               @default("[]")
+  toolCalls      Json?              @map("tool_calls")
+  tokenUsage     Json?              @map("token_usage")
+  metadata       Json               @default("{}")
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
+
+  // Relations
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sender       User?        @relation(fields: [userId], references: [id])
+
+  @@index([conversationId])
+  @@index([tenantId])
+  @@index([role])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("messages")
+}
+
+// =============================================================================
+// AuditEvent Model - Audit trail for all significant actions
+// =============================================================================
+
+model AuditEvent {
+  id         String         @id @default(cuid())
+  tenantId   String         @map("tenant_id")
+  eventType  AuditEventType @map("event_type")
+  entityType String         @map("entity_type")
+  entityId   String         @map("entity_id")
+  userId     String?        @map("user_id")
+  action     String
+  changes    Json?
+  metadata   Json           @default("{}")
+  ipAddress  String?        @map("ip_address")
+  userAgent  String?        @map("user_agent")
+  createdAt  DateTime       @default(now()) @map("created_at")
+
+  // Relations
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User?  @relation(fields: [userId], references: [id])
+
+  @@index([tenantId])
+  @@index([eventType])
+  @@index([entityType, entityId])
+  @@index([userId])
+  @@index([createdAt])
+  @@index([tenantId, eventType])
+  @@index([tenantId, entityType, entityId])
+  @@map("audit_events")
+}

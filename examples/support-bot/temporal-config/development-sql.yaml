@@ -1,0 +1,48 @@
+# Temporal Dynamic Configuration for Development
+#
+# This file contains dynamic configuration settings for the Temporal server.
+# These settings can be modified without restarting the server.
+
+# Frontend settings
+frontend.enableClientVersionCheck:
+  - value: true
+    constraints: {}
+
+# Matching service settings
+matching.numTaskqueueReadPartitions:
+  - value: 4
+    constraints: {}
+matching.numTaskqueueWritePartitions:
+  - value: 4
+    constraints: {}
+
+# History service settings
+history.persistenceMaxQPS:
+  - value: 3000
+    constraints: {}
+history.persistenceGlobalMaxQPS:
+  - value: 0
+    constraints: {}
+
+# System settings
+system.forceSearchAttributesCacheRefreshOnRead:
+  - value: true
+    constraints: {}
+
+# Limit concurrent workflow task pollers per namespace
+limit.maxConcurrentWorkflowTaskPollers:
+  - value: 8
+    constraints: {}
+
+# Archival settings (disabled for development)
+history.enableArchival:
+  - value: false
+    constraints: {}
+
+# Workflow execution retention (7 days for development)
+retention.minRetentionDays:
+  - value: 1
+    constraints: {}
+retention.maxRetentionDays:
+  - value: 7
+    constraints: {}

@@ -1,0 +1,117 @@
+version: '3.8'
+
+# Support Bot Example - Local Development Environment
+#
+# This docker-compose file provides all the infrastructure needed to run
+# the support bot example locally:
+# - PostgreSQL database
+# - Temporal server
+# - Temporal UI for workflow visualization
+#
+# Usage:
+#   docker-compose up -d
+#
+# Then run the application:
+#   pnpm dev      # Start the HTTP server
+#   pnpm worker   # Start the Temporal worker (in another terminal)
+
+services:
+  # ==========================================================================
+  # PostgreSQL Database
+  # ==========================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: support-bot-postgres
+    environment:
+      POSTGRES_USER: orkestra
+      POSTGRES_PASSWORD: orkestra_dev_password
+      POSTGRES_DB: orkestra
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U orkestra -d orkestra"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - support-bot
+
+  # ==========================================================================
+  # Temporal Server
+  # ==========================================================================
+  temporal:
+    image: temporalio/auto-setup:1.24.2
+    container_name: support-bot-temporal
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - DB=postgresql
+      - DB_PORT=5432
+      - POSTGRES_USER=orkestra
+      - POSTGRES_PWD=orkestra_dev_password
+      - POSTGRES_SEEDS=postgres
+      - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development-sql.yaml
+    ports:
+      - "7233:7233"
+    volumes:
+      - ./temporal-config:/etc/temporal/config/dynamicconfig
+    healthcheck:
+      test: ["CMD", "temporal", "operator", "cluster", "health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - support-bot
+
+  # ==========================================================================
+  # Temporal Web UI
+  # ==========================================================================
+  temporal-ui:
+    image: temporalio/ui:2.26.2
+    container_name: support-bot-temporal-ui
+    depends_on:
+      temporal:
+        condition: service_healthy
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+      - TEMPORAL_CORS_ORIGINS=http://localhost:3000
+    ports:
+      - "8080:8080"
+    networks:
+      - support-bot
+
+  # ==========================================================================
+  # Temporal Admin Tools (optional, for CLI access)
+  # ==========================================================================
+  temporal-admin-tools:
+    image: temporalio/admin-tools:1.24.2
+    container_name: support-bot-temporal-admin
+    depends_on:
+      temporal:
+        condition: service_healthy
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+    stdin_open: true
+    tty: true
+    networks:
+      - support-bot
+    profiles:
+      - tools
+
+# ==========================================================================
+# Networks
+# ==========================================================================
+networks:
+  support-bot:
+    driver: bridge
+
+# ==========================================================================
+# Volumes
+# ==========================================================================
+volumes:
+  postgres_data:
+    driver: local
