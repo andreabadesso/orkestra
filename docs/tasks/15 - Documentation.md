@@ -83,6 +83,7 @@ npx orkestra dev
 \`\`\`
 
 This starts:
+
 - PostgreSQL on `localhost:5432`
 - Temporal on `localhost:7233`
 - Temporal UI on `localhost:8080`
@@ -101,15 +102,15 @@ This creates `src/workflows/hello-world.ts`:
 import { workflow, task, timeout } from '@orkestra/sdk';
 
 export const helloWorld = workflow('hello-world', async (ctx, input) => {
-  const result = await task(ctx, {
-    title: 'Say Hello',
-    form: {
-      greeting: { type: 'text', label: 'Your greeting', required: true },
-    },
-    assignTo: { group: 'default' },
-  });
+const result = await task(ctx, {
+title: 'Say Hello',
+form: {
+greeting: { type: 'text', label: 'Your greeting', required: true },
+},
+assignTo: { group: 'default' },
+});
 
-  return { greeting: result.data.greeting };
+return { greeting: result.data.greeting };
 });
 \`\`\`
 
@@ -120,11 +121,11 @@ Using the MCP server (for AI agents):
 \`\`\`typescript
 // In your AI agent
 const result = await mcp.callTool({
-  name: 'workflow_start',
-  arguments: {
-    name: 'hello-world',
-    input: {},
-  },
+name: 'workflow_start',
+arguments: {
+name: 'hello-world',
+input: {},
+},
 });
 \`\`\`
 
@@ -132,9 +133,9 @@ Or using the REST API:
 
 \`\`\`bash
 curl -X POST http://localhost:3000/trpc/workflow.start \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -d '{"name": "hello-world", "input": {}}'
+ -H "Content-Type: application/json" \
+ -H "Authorization: Bearer YOUR_TOKEN" \
+ -d '{"name": "hello-world", "input": {}}'
 \`\`\`
 
 ## Complete the Task
@@ -170,20 +171,20 @@ to complete it.
 
 \`\`\`
 CREATED → ASSIGNED → CLAIMED → COMPLETED
-            ↓          ↓
-       ESCALATED   EXPIRED
+↓ ↓
+ESCALATED EXPIRED
 \`\`\`
 
 ### States
 
-| State | Description |
-|-------|-------------|
-| CREATED | Task created but not yet assigned |
-| ASSIGNED | Task assigned to user or group |
-| CLAIMED | User has taken ownership |
-| COMPLETED | Task finished with response |
-| ESCALATED | Task moved to higher priority |
-| EXPIRED | SLA breached without completion |
+| State     | Description                       |
+| --------- | --------------------------------- |
+| CREATED   | Task created but not yet assigned |
+| ASSIGNED  | Task assigned to user or group    |
+| CLAIMED   | User has taken ownership          |
+| COMPLETED | Task finished with response       |
+| ESCALATED | Task moved to higher priority     |
+| EXPIRED   | SLA breached without completion   |
 
 ## Creating Tasks
 
@@ -193,24 +194,24 @@ Tasks are typically created from within workflows:
 import { task, timeout } from '@orkestra/sdk';
 
 const result = await task(ctx, {
-  title: 'Review Customer Request',
-  description: 'Customer needs help with their order',
-  form: {
-    response: {
-      type: 'textarea',
-      label: 'Your response',
-      required: true,
-    },
-    escalate: {
-      type: 'boolean',
-      label: 'Needs manager review?',
-      default: false,
-    },
-  },
-  assignTo: { group: 'support' },
-  context: { orderId: '12345', customerId: 'cust_abc' },
-  conversationId: 'conv_xyz',
-  sla: timeout('30m'),
+title: 'Review Customer Request',
+description: 'Customer needs help with their order',
+form: {
+response: {
+type: 'textarea',
+label: 'Your response',
+required: true,
+},
+escalate: {
+type: 'boolean',
+label: 'Needs manager review?',
+default: false,
+},
+},
+assignTo: { group: 'support' },
+context: { orderId: '12345', customerId: 'cust_abc' },
+conversationId: 'conv_xyz',
+sla: timeout('30m'),
 });
 \`\`\`
 
@@ -220,38 +221,38 @@ Tasks use form schemas to define what input is needed:
 
 ### Field Types
 
-| Type | Description | Example |
-|------|-------------|---------|
-| `text` | Single-line text | Name, email |
-| `textarea` | Multi-line text | Responses, notes |
-| `boolean` | Checkbox | Yes/no questions |
-| `select` | Dropdown | Categories, options |
-| `number` | Numeric input | Quantities, ratings |
-| `date` | Date picker | Deadlines, dates |
+| Type       | Description      | Example             |
+| ---------- | ---------------- | ------------------- |
+| `text`     | Single-line text | Name, email         |
+| `textarea` | Multi-line text  | Responses, notes    |
+| `boolean`  | Checkbox         | Yes/no questions    |
+| `select`   | Dropdown         | Categories, options |
+| `number`   | Numeric input    | Quantities, ratings |
+| `date`     | Date picker      | Deadlines, dates    |
 
 ### Example Schema
 
 \`\`\`typescript
 {
-  customerSentiment: {
-    type: 'select',
-    label: 'Customer Sentiment',
-    options: [
-      { value: 'positive', label: 'Positive' },
-      { value: 'neutral', label: 'Neutral' },
-      { value: 'negative', label: 'Negative' },
-    ],
-    required: true,
-  },
-  notes: {
-    type: 'textarea',
-    label: 'Additional Notes',
-  },
-  prioritize: {
-    type: 'boolean',
-    label: 'Mark as priority?',
-    default: false,
-  },
+customerSentiment: {
+type: 'select',
+label: 'Customer Sentiment',
+options: [
+{ value: 'positive', label: 'Positive' },
+{ value: 'neutral', label: 'Neutral' },
+{ value: 'negative', label: 'Negative' },
+],
+required: true,
+},
+notes: {
+type: 'textarea',
+label: 'Additional Notes',
+},
+prioritize: {
+type: 'boolean',
+label: 'Mark as priority?',
+default: false,
+},
 }
 \`\`\`
 
@@ -278,11 +279,11 @@ A user must **claim** the task before completing it.
 
 Groups support different assignment strategies:
 
-| Strategy | Description |
-|----------|-------------|
-| `round-robin` | Rotate through members |
+| Strategy        | Description                 |
+| --------------- | --------------------------- |
+| `round-robin`   | Rotate through members      |
 | `load-balanced` | Assign to least-busy member |
-| `manual` | Let members self-assign |
+| `manual`        | Let members self-assign     |
 
 ## SLA and Escalation
 
@@ -290,9 +291,9 @@ Tasks can have Service Level Agreements:
 
 \`\`\`typescript
 sla: {
-  deadline: '30m',      // 30 minutes
-  onBreach: 'escalate', // What to do on breach
-  escalateTo: { group: 'support-l2' },
+deadline: '30m', // 30 minutes
+onBreach: 'escalate', // What to do on breach
+escalateTo: { group: 'support-l2' },
 }
 \`\`\`
 
@@ -304,14 +305,14 @@ For complex escalation:
 import { taskWithEscalation } from '@orkestra/sdk';
 
 await taskWithEscalation(ctx, {
-  // ... task options
-  escalation: {
-    steps: [
-      { after: '15m', action: 'notify' },
-      { after: '30m', action: 'reassign', target: { group: 'support-l2' } },
-      { after: '1h', action: 'escalate', target: { group: 'managers' } },
-    ],
-  },
+// ... task options
+escalation: {
+steps: [
+{ after: '15m', action: 'notify' },
+{ after: '30m', action: 'reassign', target: { group: 'support-l2' } },
+{ after: '1h', action: 'escalate', target: { group: 'managers' } },
+],
+},
 });
 \`\`\`
 
@@ -321,10 +322,10 @@ Tasks can include context that helps humans understand what they're reviewing:
 
 \`\`\`typescript
 context: {
-  orderId: '12345',
-  customerName: 'John Doe',
-  orderTotal: '$150.00',
-  issueType: 'refund-request',
+orderId: '12345',
+customerName: 'John Doe',
+orderTotal: '$150.00',
+issueType: 'refund-request',
 }
 \`\`\`
 
@@ -365,8 +366,8 @@ Start a new workflow instance.
 **Response:**
 \`\`\`json
 {
-  "workflowId": "wfl_abc123",
-  "runId": "run_xyz789"
+"workflowId": "wfl_abc123",
+"runId": "run_xyz789"
 }
 \`\`\`
 
@@ -382,10 +383,10 @@ Get workflow status and details.
 **Response:**
 \`\`\`json
 {
-  "workflowId": "wfl_abc123",
-  "status": "RUNNING",
-  "startTime": "2024-01-15T10:00:00Z",
-  "input": { ... }
+"workflowId": "wfl_abc123",
+"status": "RUNNING",
+"startTime": "2024-01-15T10:00:00Z",
+"input": { ... }
 }
 \`\`\`
 
@@ -482,17 +483,17 @@ Get current tenant configuration.
 
 ## Acceptance Criteria
 
-- [ ] Getting started guide complete
-- [ ] All concepts documented
-- [ ] All guides written
-- [ ] MCP tools reference complete
-- [ ] REST API reference complete
-- [ ] SDK reference complete
-- [ ] CLI reference complete
-- [ ] Examples documented
-- [ ] Contributing guide written
-- [ ] Documentation builds without errors
-- [ ] All code samples tested
+- [x] Getting started guide complete
+- [x] All concepts documented
+- [x] All guides written
+- [x] MCP tools reference complete
+- [x] REST API reference complete
+- [x] SDK reference complete
+- [x] CLI reference complete
+- [x] Examples documented
+- [x] Contributing guide written
+- [x] Documentation builds without errors
+- [x] All code samples tested
 
 ## Dependencies
 

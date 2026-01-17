@@ -78,7 +78,7 @@ export const customerSupport = workflow('customer-support', async (ctx, input) =
 
 ## Project Status
 
-### Complete (15/18 tasks)
+### Complete (16/18 tasks)
 
 - Core engine (Temporal integration, Task Manager)
 - SDK (workflow, task, escalation helpers)
@@ -87,11 +87,11 @@ export const customerSupport = workflow('customer-support', async (ctx, input) =
 - CLI (init, dev, generate, db)
 - Testing (53 unit tests + 45 integration tests)
 - Example project (support bot with AI-first escalation)
+- **Documentation** (comprehensive guides and API reference)
 
-### In Progress (3/18 tasks)
+### In Progress (2/18 tasks)
 
-- Dashboard UI (web interface for task completion)
-- Documentation (getting started guides, API reference)
+- Dashboard UI (web interface for task completion) - Optional
 - Release preparation (npm publishing, CI/CD)
 
 **Note**: The system is fully functional via API and MCP. Dashboard UI is optional.
@@ -122,9 +122,59 @@ orkestra/
 
 ## Documentation
 
-- [Architecture](docs/Architecture.md) - System design
-- [Workflows](docs/concepts/workflows.md) - Workflow patterns
-- [Task Index](docs/tasks/00%20-%20Task%20Index.md) - Implementation roadmap
+Comprehensive documentation is available in the `docs/` directory:
+
+### Getting Started
+
+- [Installation](docs/getting-started/installation.md) - Setup guide
+- [Quick Start](docs/getting-started/quick-start.md) - Up and running in 5 minutes
+- [First Workflow](docs/getting-started/first-workflow.md) - Tutorial
+- [First Task](docs/getting-started/first-task.md) - Task creation basics
+
+### Concepts
+
+- [Architecture](docs/concepts/architecture.md) - System design
+- [Workflows](docs/concepts/workflows.md) - Workflow patterns and lifecycle
+- [Tasks](docs/concepts/tasks.md) - Human task system
+- [Multi-tenancy](docs/concepts/multi-tenancy.md) - Tenant isolation
+- [SLA & Escalation](docs/concepts/sla-escalation.md) - Time-based policies
+
+### Guides
+
+- [Writing Workflows](docs/guides/writing-workflows.md) - Workflow development
+- [Form Schemas](docs/guides/form-schemas.md) - Task form definitions
+- [Assignment Strategies](docs/guides/assignment-strategies.md) - Task routing
+- [Notifications](docs/guides/notifications.md) - Alert configuration
+- [Deployment](docs/guides/deployment.md) - Production setup
+
+### API Reference
+
+- [MCP Tools](docs/api-reference/mcp-tools.md) - AI agent interface
+- [REST API](docs/api-reference/rest-api.md) - HTTP endpoints
+- [SDK Reference](docs/api-reference/sdk-reference.md) - TypeScript SDK
+- [CLI Reference](docs/api-reference/cli-reference.md) - Command-line tools
+
+### Examples
+
+- [Support Bot](docs/examples/support-bot.md) - Customer support example
+- [Approval Workflow](docs/examples/approval-workflow.md) - Multi-level approvals
+- [Sales Pipeline](docs/examples/sales-pipeline.md) - Lead qualification
+
+### View Documentation Locally
+
+```bash
+cd docs
+pnpm run docs:dev
+# Visit http://localhost:5173
+```
+
+Or build for production:
+
+```bash
+cd docs
+pnpm run docs:build
+pnpm run docs:preview
+```
 
 ## Development
 

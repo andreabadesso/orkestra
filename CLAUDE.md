@@ -18,15 +18,15 @@ Every AI-powered application eventually needs human oversight. Currently, develo
 
 ## Tech Stack
 
-| Component | Technology |
-|-----------|------------|
-| Language | TypeScript |
-| Workflow Engine | Temporal |
-| MCP Server | Anthropic MCP SDK |
-| API | REST + tRPC |
-| Dashboard | Next.js + Tailwind + shadcn/ui |
-| Database | PostgreSQL |
-| Observability | Langfuse adapter |
+| Component       | Technology                     |
+| --------------- | ------------------------------ |
+| Language        | TypeScript                     |
+| Workflow Engine | Temporal                       |
+| MCP Server      | Anthropic MCP SDK              |
+| API             | REST + tRPC                    |
+| Dashboard       | Next.js + Tailwind + shadcn/ui |
+| Database        | PostgreSQL                     |
+| Observability   | Langfuse adapter               |
 
 ## Project Structure (Target)
 
@@ -63,32 +63,38 @@ All implementation tasks are in `docs/tasks/`. Each task is self-contained with:
 ## Current Progress
 
 ### Phase 1: Foundation 🔵
+
 - [x] Task 01 - Initialize Monorepo
 - [x] Task 02 - Docker Dev Environment
 - [x] Task 03 - Core Package Setup
 
 ### Phase 2: Core Engine 🟢
+
 - [x] Task 04 - Temporal Integration
 - [x] Task 05 - Database Schema
 - [x] Task 06 - Task Manager
 - [x] Task 07 - SDK Workflow Helpers
 
 ### Phase 3: Interfaces 🟡
+
 - [x] Task 08 - MCP Server
 - [x] Task 09 - REST API
 
 ### Phase 4: Dashboard 🟠
+
 - [ ] Task 10 - Dashboard UI
 - [x] Task 11 - Dashboard Backend
 - [x] Task 12 - Notification Service
 
 ### Phase 5: Developer Experience 🔴
+
 - [x] Task 13 - CLI Tool
 - [x] Task 14 - Integration Testing
-- [ ] Task 15 - Documentation
+- [x] Task 15 - Documentation
 - [ ] Task 16 - Release Preparation
 
 ### Phase 6: Examples 🟣
+
 - [x] Task 17 - Example Project (Support Bot)
 - [x] Task 18 - Workflow Agent
 
@@ -111,6 +117,7 @@ direnv allow
 ```
 
 All commands below assume you are inside `nix develop`. The flake provides:
+
 - Node.js 20
 - pnpm
 - Docker & docker-compose
@@ -172,6 +179,7 @@ pnpm typecheck
 ## Key Design Decisions
 
 ### Why Temporal?
+
 - Durable execution (survives crashes)
 - Built-in retries, timeouts, and error handling
 - Time-based triggers for SLAs
@@ -179,17 +187,20 @@ pnpm typecheck
 - Battle-tested at scale
 
 ### Why MCP as Primary AI Interface?
+
 - Native integration with Claude and other AI models
 - Tools and resources pattern fits orchestration perfectly
 - Standardized protocol for AI-backend communication
 
 ### Why Code-First Workflows?
+
 - Version controlled
 - Testable
 - Type-safe
 - No visual editor lock-in
 
 ### Why Multi-Tenant by Default?
+
 - Most real applications need it
 - Harder to add later than to build in from start
 - Enforced at type level prevents accidents
@@ -215,12 +226,12 @@ export const customerSupport = workflow('customer-support', async (ctx, input) =
           { value: 'positive', label: 'Positive' },
           { value: 'neutral', label: 'Neutral' },
           { value: 'frustrated', label: 'Frustrated' },
-        ]
+        ],
       },
     },
     assignTo: { group: 'support-l1' },
     context: { conversationId, customerId },
-    sla: timeout('30m'),  // Escalate if not handled in 30 min
+    sla: timeout('30m'), // Escalate if not handled in 30 min
   });
 
   return { answer: result.data.answer, handledBy: 'human' };
@@ -231,9 +242,23 @@ export const customerSupport = workflow('customer-support', async (ctx, input) =
 
 ## Reference Documentation
 
+- `docs/` - User documentation (VitePress site)
+  - Getting Started: Installation, Quick Start, First Workflow
+  - Concepts: Architecture, Workflows, Tasks, Multi-tenancy, SLA & Escalation
+  - Guides: Writing Workflows, Form Schemas, Assignment Strategies, Notifications, Deployment
+  - API Reference: MCP Tools, REST API, SDK Reference, CLI Reference
+  - Examples: Support Bot, Approval Workflow, Sales Pipeline
 - `docs/PROJECT.md` - Full project overview
 - `docs/Architecture.md` - Detailed technical architecture
 - `docs/tasks/` - All implementation tasks
+
+**To view documentation locally:**
+
+```bash
+cd docs
+nix develop --command pnpm run docs:dev
+# Visit http://localhost:5173
+```
 
 ## External References
 
@@ -254,7 +279,8 @@ export const customerSupport = workflow('customer-support', async (ctx, input) =
 
 ## Session Notes (Last Updated: 2026-01-16)
 
-### What's Complete (15/18 tasks)
+### What's Complete (16/18 tasks)
+
 - **Core**: Types, config, errors, ID generation, Temporal integration, Prisma schema, repositories, Task Manager service, Notification service
 - **SDK**: workflow(), task(), taskWithEscalation(), duration parsing, timeout/deadline utilities
 - **MCP Server**: 17 tools for AI agents (workflows, tasks, conversations, users)
@@ -263,16 +289,19 @@ export const customerSupport = workflow('customer-support', async (ctx, input) =
 - **Dashboard Backend**: NextAuth + tRPC client setup
 - **Testing**: 53 unit tests + 45 integration tests
 - **Examples**: Support Bot example with AI-first escalation
+- **Documentation**: Comprehensive docs (25+ files) - Getting Started, Concepts, Guides, API Reference, Examples
 
-### What's Remaining (3 tasks)
+### What's Remaining (2 tasks)
+
 - **Task 10 - Dashboard UI**: UI components for task inbox/completion (optional for testing)
-- **Task 15 - Documentation**: Markdown docs for getting started, concepts, API reference
 - **Task 16 - Release Preparation**: Package publishing, GitHub Actions
 
 ### Known Issues Fixed This Session
+
 - **docker-compose.yml**: Changed `DB=postgresql` to `DB=postgres12` (Temporal requires this exact driver name)
 
 ### How to Test Now
+
 ```bash
 # 1. Start infrastructure
 docker compose up -d
@@ -292,7 +321,9 @@ nix develop --command pnpm dev
 ```
 
 ### Dashboard UI is Optional
+
 The system is fully functional without Dashboard UI. Tasks can be completed via:
+
 - REST API: `POST /trpc/task.complete`
 - MCP tools programmatically
 - Custom UI
